@@ -4,25 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OPERATION: DEFUSE — Mission Hub</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --red: #e63946;
-    --red-dim: #8b1a22;
+    --red: #ff2d3f;
+    --red-dim: #7a121d;
     --green: #39ff6a;
     --green-dim: #1a4d2a;
     --amber: #f4a01a;
-    --bg: #050608;
-    --bg2: #0a0c10;
-    --surface: #0f1117;
-    --border: #1e2330;
-    --text: #c8cdd8;
-    --muted: #4a5166;
+    --gold: #ffd166;
+    --cyan: #36d6ff;
+    --bg: #030509;
+    --bg2: #070b13;
+    --surface: rgba(13, 17, 28, 0.84);
+    --surface2: rgba(10, 14, 24, 0.72);
+    --border: rgba(80, 100, 140, 0.34);
+    --text: #d5dbea;
+    --muted: #626d86;
     --mono: 'Share Tech Mono', monospace;
     --display: 'Bebas Neue', sans-serif;
     --ui: 'Rajdhani', sans-serif;
+    --orbit: 'Orbitron', sans-serif;
   }
 
   html, body {
@@ -33,17 +37,67 @@
     overflow: hidden;
   }
 
-  /* Scanline overlay */
+  body {
+    background:
+      radial-gradient(circle at 14% 12%, rgba(255,45,63,0.20), transparent 28%),
+      radial-gradient(circle at 84% 16%, rgba(54,214,255,0.15), transparent 26%),
+      radial-gradient(circle at 50% 112%, rgba(244,160,26,0.11), transparent 38%),
+      linear-gradient(135deg, #020306, #050811 50%, #0b0305);
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(54,214,255,0.028) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(54,214,255,0.022) 1px, transparent 1px);
+    background-size: 52px 52px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
   body::after {
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px),
+      radial-gradient(ellipse at center, transparent 48%, rgba(0,0,0,0.72) 100%);
     pointer-events: none;
     z-index: 9999;
   }
 
-  /* ─── SCREENS ─── */
+  @keyframes slowSweep {
+    0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+    18% { opacity: 0.9; }
+    100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+  }
+  @keyframes pulseRed {
+    0%,100% { box-shadow: 0 0 24px rgba(255,45,63,0.20); }
+    50% { box-shadow: 0 0 54px rgba(255,45,63,0.38); }
+  }
+  @keyframes radarSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes ticker {
+    from { transform: translateX(100vw); }
+    to { transform: translateX(-100%); }
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  @keyframes deployGlow {
+    0%,100% { text-shadow: 0 0 20px rgba(57,255,106,0.3); }
+    50% { text-shadow: 0 0 46px rgba(57,255,106,0.9); }
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
   .screen {
     position: fixed;
     inset: 0;
@@ -51,48 +105,120 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
-    transition: opacity 0.6s ease;
+    padding: clamp(1rem, 3vw, 2rem);
+    transition: opacity 0.45s ease;
+    z-index: 2;
   }
   .screen.hidden { opacity: 0; pointer-events: none; }
 
-  /* ─── BRIEFING SCREEN ─── */
-  #briefing {
-    background: var(--bg);
+  .command-frame {
+    width: min(1080px, 100%);
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr) 230px;
+    gap: 18px;
+    align-items: center;
   }
 
-  .header-bar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, var(--red), var(--red), transparent);
-    animation: scanH 4s linear infinite;
+  .side-panel, .main-panel {
+    position: relative;
+    background:
+      linear-gradient(135deg, rgba(255,45,63,0.10), transparent 36%),
+      linear-gradient(180deg, var(--surface), rgba(5, 8, 15, 0.82));
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow:
+      0 24px 80px rgba(0,0,0,0.42),
+      inset 0 0 0 1px rgba(255,255,255,0.035);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
   }
-  @keyframes scanH {
-    0%   { opacity: 0.4; }
-    50%  { opacity: 1; }
-    100% { opacity: 0.4; }
+
+  .side-panel {
+    min-height: 430px;
+    padding: 18px;
+  }
+
+  .main-panel {
+    padding: clamp(22px, 4vw, 38px);
+    text-align: center;
+    min-height: 560px;
+  }
+
+  .side-panel::before, .main-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--red) 0 42px, transparent 42px calc(100% - 42px), var(--red) calc(100% - 42px)),
+      linear-gradient(90deg, var(--red) 0 42px, transparent 42px calc(100% - 42px), var(--red) calc(100% - 42px));
+    background-size: 100% 2px;
+    background-position: top, bottom;
+    background-repeat: no-repeat;
+    opacity: 0.48;
+  }
+
+  .panel-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .radar {
+    width: 156px;
+    height: 156px;
+    border-radius: 50%;
+    margin: 22px auto;
+    border: 1px solid rgba(54,214,255,0.34);
+    background:
+      radial-gradient(circle, transparent 28%, rgba(54,214,255,0.08) 29%, transparent 31%),
+      radial-gradient(circle, transparent 58%, rgba(54,214,255,0.07) 59%, transparent 61%),
+      conic-gradient(from 0deg, rgba(54,214,255,0.55), transparent 34%, transparent 100%);
+    box-shadow: 0 0 30px rgba(54,214,255,0.15);
+    animation: radarSpin 5s linear infinite;
+  }
+
+  .signal-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin: 12px 0;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+  }
+  .barline {
+    height: 4px;
+    background: #151b2b;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .barline span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--green));
+    box-shadow: 0 0 18px rgba(54,214,255,0.4);
   }
 
   .classified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--mono);
     font-size: 11px;
-    letter-spacing: 0.35em;
-    color: var(--red);
-    border: 1px solid var(--red-dim);
-    padding: 4px 16px;
-    margin-bottom: 2rem;
-    animation: blink-border 2s step-end infinite;
-  }
-  @keyframes blink-border {
-    0%, 100% { border-color: var(--red-dim); }
-    50%       { border-color: var(--red); }
+    letter-spacing: 0.32em;
+    color: #ffb3ba;
+    border: 1px solid rgba(255,45,63,0.50);
+    background: rgba(255,45,63,0.055);
+    padding: 7px 18px;
+    border-radius: 999px;
+    margin-bottom: 1.6rem;
+    animation: pulseRed 2.8s ease-in-out infinite;
   }
 
-  .title-block {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
   .op-label {
     font-family: var(--mono);
     font-size: 12px;
@@ -102,26 +228,27 @@
   }
   .op-title {
     font-family: var(--display);
-    font-size: clamp(52px, 8vw, 96px);
-    letter-spacing: 0.08em;
+    font-size: clamp(58px, 9vw, 118px);
+    letter-spacing: 0.09em;
     color: #fff;
-    line-height: 1;
-    text-shadow: 0 0 60px rgba(230,57,70,0.3);
+    line-height: 0.92;
+    text-shadow: 0 0 70px rgba(255,45,63,0.35);
   }
   .op-sub {
-    font-family: var(--display);
-    font-size: clamp(18px, 3vw, 28px);
-    letter-spacing: 0.3em;
+    font-family: var(--orbit);
+    font-size: clamp(13px, 2vw, 20px);
+    letter-spacing: 0.38em;
     color: var(--red);
+    margin-top: 10px;
   }
 
-  /* Divider */
   .divider {
     width: 100%;
-    max-width: 540px;
+    max-width: 600px;
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border), var(--muted), var(--border), transparent);
-    margin: 1.5rem 0;
+    background: linear-gradient(90deg, transparent, var(--red), var(--cyan), var(--red), transparent);
+    margin: 1.6rem auto;
+    opacity: 0.55;
   }
 
   .briefing-text {
@@ -129,97 +256,147 @@
     font-size: 13px;
     line-height: 1.9;
     color: var(--text);
-    max-width: 540px;
+    max-width: 620px;
     text-align: center;
-    margin-bottom: 2rem;
+    margin: 0 auto 1.8rem;
   }
-  .briefing-text em {
-    color: var(--amber);
-    font-style: normal;
-  }
-  .briefing-text strong {
-    color: var(--red);
-    font-style: normal;
-  }
+  .briefing-text em { color: var(--amber); font-style: normal; }
+  .briefing-text strong { color: var(--red); font-style: normal; }
 
-  /* Stats row */
   .stats-row {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 0 auto 1.8rem;
     font-family: var(--mono);
-    font-size: 11px;
+    max-width: 560px;
   }
-  .stat { text-align: center; }
-  .stat-val { font-size: 22px; color: var(--amber); display: block; }
-  .stat-lbl { color: var(--muted); letter-spacing: 0.2em; }
+  .stat {
+    text-align: center;
+    border: 1px solid rgba(80,100,140,0.26);
+    background: rgba(0,0,0,0.18);
+    border-radius: 14px;
+    padding: 13px 10px;
+  }
+  .stat-val { font-size: 24px; color: var(--amber); display: block; }
+  .stat-lbl { color: var(--muted); letter-spacing: 0.18em; font-size: 9px; }
 
-  /* Accept button */
-  .accept-btn {
+  .action-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .accept-btn, .admin-btn, .launch-btn {
     font-family: var(--display);
-    font-size: 22px;
-    letter-spacing: 0.25em;
+    font-size: 21px;
+    letter-spacing: 0.22em;
     color: #fff;
     background: transparent;
     border: 1px solid var(--red);
-    padding: 14px 52px;
+    padding: 14px 42px;
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transition: color 0.3s;
+    transition: color 0.25s, border-color 0.25s, transform 0.15s;
     text-transform: uppercase;
+    border-radius: 4px;
   }
-  .accept-btn::before {
+  .admin-btn {
+    border-color: rgba(54,214,255,0.55);
+    color: var(--cyan);
+    padding-inline: 28px;
+  }
+  .launch-btn {
+    border-color: var(--green);
+    color: var(--green);
+    font-size: 17px;
+    padding: 10px 22px;
+    letter-spacing: 0.18em;
+  }
+
+  .accept-btn::before, .admin-btn::before, .launch-btn::before {
     content: '';
     position: absolute;
     inset: 0;
     background: var(--red);
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.35s ease;
+    transition: transform 0.28s ease;
     z-index: -1;
   }
-  .accept-btn:hover { color: #fff; }
-  .accept-btn:hover::before { transform: scaleX(1); }
-  .accept-btn:active { transform: scale(0.97); }
+  .admin-btn::before { background: rgba(54,214,255,0.24); }
+  .launch-btn::before { background: rgba(57,255,106,0.18); }
+  .accept-btn:hover::before, .admin-btn:hover::before, .launch-btn:hover::before { transform: scaleX(1); }
+  .accept-btn:active, .admin-btn:active, .launch-btn:active { transform: scale(0.97); }
 
   .warning-line {
     font-family: var(--mono);
     font-size: 10px;
     color: var(--muted);
-    letter-spacing: 0.15em;
+    letter-spacing: 0.14em;
     margin-top: 1.2rem;
   }
 
-  /* Corner decorations */
+  .device-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .device-mini {
+    border: 1px solid rgba(80,100,140,0.25);
+    background: rgba(0,0,0,0.18);
+    border-radius: 12px;
+    padding: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+  .device-mini span { color: var(--gold); }
+
   .corner {
     position: fixed;
-    width: 40px;
-    height: 40px;
-    border-color: var(--border);
+    width: 48px;
+    height: 48px;
+    border-color: rgba(80,100,140,0.45);
     border-style: solid;
     border-width: 0;
+    z-index: 10;
   }
   .corner.tl { top: 16px; left: 16px; border-top-width: 1px; border-left-width: 1px; }
   .corner.tr { top: 16px; right: 16px; border-top-width: 1px; border-right-width: 1px; }
-  .corner.bl { bottom: 16px; left: 16px; border-bottom-width: 1px; border-left-width: 1px; }
-  .corner.br { bottom: 16px; right: 16px; border-bottom-width: 1px; border-right-width: 1px; }
+  .corner.bl { bottom: 44px; left: 16px; border-bottom-width: 1px; border-left-width: 1px; }
+  .corner.br { bottom: 44px; right: 16px; border-bottom-width: 1px; border-right-width: 1px; }
 
-  /* Ticker */
+  .sweep-line {
+    position: fixed;
+    top: 0;
+    bottom: 28px;
+    width: 34vw;
+    background: linear-gradient(90deg, transparent, rgba(54,214,255,0.06), transparent);
+    z-index: 1;
+    pointer-events: none;
+    animation: slowSweep 8s ease-in-out infinite;
+  }
+
   .ticker {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 28px;
-    background: var(--surface);
+    height: 30px;
+    background: rgba(15,17,23,0.95);
     border-top: 1px solid var(--border);
     overflow: hidden;
     display: flex;
     align-items: center;
+    z-index: 20;
   }
   .ticker-label {
     font-family: var(--mono);
     font-size: 10px;
-    color: var(--red);
+    color: #fff;
     background: var(--red-dim);
     padding: 0 12px;
     height: 100%;
@@ -234,17 +411,19 @@
     color: var(--muted);
     letter-spacing: 0.1em;
     white-space: nowrap;
-    animation: scroll-left 30s linear infinite;
+    animation: ticker 30s linear infinite;
     padding-left: 2rem;
   }
-  @keyframes scroll-left {
-    from { transform: translateX(100vw); }
-    to   { transform: translateX(-100%); }
-  }
 
-  /* ─── DEPLOY SCREEN ─── */
-  #deploy {
-    background: var(--bg);
+  #deploy { background: transparent; }
+  .deploy-card {
+    width: min(640px, 100%);
+    text-align: center;
+    padding: 34px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.42);
   }
   .deploy-label {
     font-family: var(--mono);
@@ -252,11 +431,7 @@
     letter-spacing: 0.4em;
     color: var(--green);
     margin-bottom: 1rem;
-    animation: pulse-green 1.5s ease-in-out infinite;
-  }
-  @keyframes pulse-green {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
+    animation: deployGlow 1.5s ease-in-out infinite;
   }
   .mission-id {
     font-family: var(--display);
@@ -266,7 +441,6 @@
     margin-bottom: 0.5rem;
   }
   .mission-id span { color: var(--red); }
-
   .mission-meta {
     font-family: var(--mono);
     font-size: 11px;
@@ -274,24 +448,22 @@
     letter-spacing: 0.2em;
     margin-bottom: 2rem;
   }
-
-  /* Loading bar */
   .load-bar-wrap {
     width: 100%;
-    max-width: 440px;
-    height: 3px;
+    height: 5px;
     background: var(--border);
     margin-bottom: 1rem;
     position: relative;
     overflow: hidden;
+    border-radius: 999px;
   }
   .load-bar {
     height: 100%;
-    background: var(--green);
+    background: linear-gradient(90deg, var(--green), var(--cyan));
     width: 0%;
-    transition: width 2.5s ease;
+    transition: width 0.45s ease;
+    box-shadow: 0 0 18px rgba(57,255,106,0.5);
   }
-
   .load-status {
     font-family: var(--mono);
     font-size: 11px;
@@ -299,17 +471,15 @@
     letter-spacing: 0.2em;
   }
 
-  /* ─── GAME SCREEN ─── */
   #game-screen {
     flex-direction: column;
     padding: 0;
     background: #000;
   }
-
   .game-topbar {
     width: 100%;
-    height: 40px;
-    background: var(--surface);
+    height: 44px;
+    background: rgba(15,17,23,0.98);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -336,71 +506,213 @@
     color: var(--muted);
     background: transparent;
     border: 1px solid var(--border);
-    padding: 4px 14px;
+    padding: 5px 14px;
     cursor: pointer;
     transition: color 0.2s, border-color 0.2s;
+    border-radius: 4px;
   }
   .abort-btn:hover { color: var(--red); border-color: var(--red); }
-
   #game-frame {
     flex: 1;
     width: 100%;
     border: none;
     display: block;
   }
+
+  .admin-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+  .admin-modal.active { display: flex; }
+  .admin-card {
+    width: min(720px, 100%);
+    max-height: 88vh;
+    overflow: auto;
+    background:
+      linear-gradient(135deg, rgba(54,214,255,0.10), transparent 36%),
+      rgba(8, 12, 22, 0.96);
+    border: 1px solid rgba(54,214,255,0.36);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 30px 100px rgba(0,0,0,0.62);
+    animation: modalIn 0.25s ease;
+  }
+  .admin-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .admin-title {
+    font-family: var(--orbit);
+    color: var(--cyan);
+    letter-spacing: 0.18em;
+    font-size: 18px;
+  }
+  .close-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-family: var(--mono);
+  }
+  .close-btn:hover { color: var(--red); border-color: var(--red); }
+
+  .admin-login {
+    display: grid;
+    gap: 12px;
+  }
+  .admin-input {
+    width: 100%;
+    background: #050913;
+    border: 1px solid rgba(54,214,255,0.35);
+    color: var(--cyan);
+    padding: 13px 14px;
+    border-radius: 10px;
+    font-family: var(--orbit);
+    font-size: 20px;
+    letter-spacing: 0.25em;
+    outline: none;
+    text-align: center;
+  }
+  .admin-error {
+    min-height: 18px;
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-align: center;
+  }
+  .admin-grid {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .admin-grid.active { display: grid; }
+  .game-card {
+    border: 1px solid rgba(80,100,140,0.34);
+    background: rgba(0,0,0,0.18);
+    border-radius: 16px;
+    padding: 14px;
+    text-align: left;
+    transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  }
+  .game-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--cyan);
+    background: rgba(54,214,255,0.055);
+  }
+  .game-card-title {
+    font-family: var(--orbit);
+    color: #fff;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    margin-bottom: 5px;
+  }
+  .game-card-url {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 920px) {
+    .command-frame { grid-template-columns: 1fr; }
+    .side-panel { display: none; }
+    .main-panel { min-height: auto; }
+    .game-topbar-info { display: none; }
+  }
+
+  @media (max-width: 560px) {
+    .stats-row, .admin-grid { grid-template-columns: 1fr; }
+    .accept-btn, .admin-btn { width: 100%; padding-inline: 20px; }
+    .screen { padding: 1rem; }
+  }
 </style>
 </head>
 <body>
 
-<!-- Decorative corners -->
+<div class="sweep-line"></div>
 <div class="corner tl"></div>
 <div class="corner tr"></div>
 <div class="corner bl"></div>
 <div class="corner br"></div>
-<div class="header-bar"></div>
 
-<!-- ── SCREEN 1: BRIEFING ── -->
 <div class="screen" id="briefing">
-  <div class="classified-badge">⬛ CLASSIFIED // EYES ONLY</div>
+  <div class="command-frame">
+    <aside class="side-panel">
+      <div class="panel-label">SATELLITE SWEEP</div>
+      <div class="radar"></div>
+      <div class="signal-row"><span>SIGNAL</span><span>87%</span></div>
+      <div class="barline"><span style="width:87%"></span></div>
+      <div class="signal-row"><span>COMMS</span><span>SECURE</span></div>
+      <div class="barline"><span style="width:100%"></span></div>
+      <div class="signal-row"><span>THREAT</span><span>ACTIVE</span></div>
+      <div class="barline"><span style="width:72%;background:linear-gradient(90deg,var(--amber),var(--red))"></span></div>
+    </aside>
 
-  <div class="title-block">
-    <div class="op-label">OPERATION</div>
-    <div class="op-title">DEFUSE</div>
-    <div class="op-sub">Protocol Zero</div>
+    <main class="main-panel">
+      <div class="classified-badge">⬛ CLASSIFIED // EYES ONLY</div>
+      <div class="op-label">OPERATION</div>
+      <div class="op-title">DEFUSE</div>
+      <div class="op-sub">PROTOCOL ZERO</div>
+
+      <div class="divider"></div>
+
+      <p class="briefing-text">
+        Agent. Our intelligence confirms <em>10 active devices</em> have been deployed across
+        undisclosed locations. Each carries a <strong>unique 5-digit deactivation code.</strong>
+        You will be assigned one target at random.<br><br>
+        Find the code. Defuse the device.<br>
+        <strong>Failure is not an option.</strong>
+      </p>
+
+      <div class="stats-row">
+        <div class="stat"><span class="stat-val">10</span><span class="stat-lbl">DEVICES</span></div>
+        <div class="stat"><span class="stat-val">05</span><span class="stat-lbl">DIGIT CODE</span></div>
+        <div class="stat"><span class="stat-val">01</span><span class="stat-lbl">CHANCE</span></div>
+      </div>
+
+      <div class="action-row">
+        <button class="accept-btn" onclick="acceptMission()">Accept Mission</button>
+        <button class="admin-btn" onclick="openAdmin()">Admin Override</button>
+      </div>
+      <div class="warning-line">// UNAUTHORIZED ACCESS IS A FEDERAL OFFENSE · CLEARANCE LEVEL DELTA REQUIRED</div>
+    </main>
+
+    <aside class="side-panel">
+      <div class="panel-label">DEVICE NETWORK</div>
+      <div class="device-list" id="device-list"></div>
+    </aside>
   </div>
-
-  <div class="divider"></div>
-
-  <p class="briefing-text">
-    Agent. Our intelligence confirms <em>10 active devices</em> have been deployed across
-    undisclosed locations. Each carries a <strong>unique 5-digit deactivation code.</strong>
-    You will be assigned one target at random.<br><br>
-    Find the code. Defuse the device.<br>
-    <strong>Failure is not an option.</strong>
-  </p>
-
-  <div class="stats-row">
-    <div class="stat"><span class="stat-val">10</span><span class="stat-lbl">DEVICES</span></div>
-    <div class="stat"><span class="stat-val">05</span><span class="stat-lbl">DIGIT CODE</span></div>
-    <div class="stat"><span class="stat-val">01</span><span class="stat-lbl">CHANCE</span></div>
-  </div>
-
-  <button class="accept-btn" onclick="acceptMission()">Accept Mission</button>
-  <div class="warning-line">// UNAUTHORIZED ACCESS IS A FEDERAL OFFENSE · CLEARANCE LEVEL DELTA REQUIRED</div>
 </div>
 
-<!-- ── SCREEN 2: DEPLOY ── -->
 <div class="screen hidden" id="deploy">
-  <div class="deploy-label">▶ MISSION ASSIGNED</div>
-  <div class="mission-id" id="mission-number">DEVICE <span>#--</span></div>
-  <div class="mission-meta" id="mission-meta">ESTABLISHING SECURE CHANNEL...</div>
-  <div class="load-bar-wrap">
-    <div class="load-bar" id="load-bar"></div>
+  <div class="deploy-card">
+    <div class="deploy-label" id="deploy-label">▶ MISSION ASSIGNED</div>
+    <div class="mission-id" id="mission-number">DEVICE <span>#--</span></div>
+    <div class="mission-meta" id="mission-meta">ESTABLISHING SECURE CHANNEL...</div>
+    <div class="load-bar-wrap">
+      <div class="load-bar" id="load-bar"></div>
+    </div>
+    <div class="load-status" id="load-status">INITIALIZING...</div>
   </div>
-  <div class="load-status" id="load-status">INITIALIZING...</div>
 </div>
 
-<!-- ── SCREEN 3: GAME ── -->
 <div class="screen hidden" id="game-screen">
   <div class="game-topbar">
     <span class="game-topbar-id" id="topbar-id">DEVICE #--</span>
@@ -410,7 +722,28 @@
   <iframe id="game-frame" src="about:blank" allowfullscreen></iframe>
 </div>
 
-<!-- Ticker -->
+<div class="admin-modal" id="admin-modal">
+  <div class="admin-card">
+    <div class="admin-head">
+      <div>
+        <div class="admin-title">ADMIN OVERRIDE</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.16em;margin-top:6px;">
+          ENTER CLEARANCE PASSWORD TO SELECT DEVICE MANUALLY
+        </div>
+      </div>
+      <button class="close-btn" onclick="closeAdmin()">CLOSE</button>
+    </div>
+
+    <div class="admin-login" id="admin-login">
+      <input class="admin-input" id="admin-password" type="password" inputmode="numeric" placeholder="••••••" maxlength="6">
+      <button class="launch-btn" onclick="checkAdminPassword()">UNLOCK ADMIN PANEL</button>
+      <div class="admin-error" id="admin-error"></div>
+    </div>
+
+    <div class="admin-grid" id="admin-grid"></div>
+  </div>
+</div>
+
 <div class="ticker" id="main-ticker">
   <div class="ticker-label">LIVE FEED</div>
   <div class="ticker-scroll">
@@ -420,28 +753,26 @@
     DEACTIVATION WINDOW OPEN &nbsp;·&nbsp;
     INTEL VERIFIED — PROCEED WITH CAUTION &nbsp;·&nbsp;
     EACH DEVICE CARRIES A UNIQUE 5-DIGIT CODE &nbsp;·&nbsp;
-    ABORT PROTOCOL AVAILABLE AT ANY TIME &nbsp;·&nbsp;
+    ADMIN OVERRIDE REQUIRES CLEARANCE PASSWORD &nbsp;·&nbsp;
     GOOD LUCK, AGENT.
   </div>
 </div>
 
 <script>
-  // ─────────────────────────────────────────────
-  //  CONFIGURE YOUR 10 GAME URLS HERE
-  // ─────────────────────────────────────────────
+  const ADMIN_PASSWORD = "476105";
+
   const GAMES = [
-    { id: 1,  url: "https://triplea050520-creator.github.io/theworldsspygame1/" },
-    { id: 2,  url: "https://triplea050520-creator.github.io/theworldsspygame2/" },
-    { id: 3,  url: "https://triplea050520-creator.github.io/theworldsspygmae3/" },
-    { id: 4,  url: "https://triplea050520-creator.github.io/theworldsspygame4/" },
-    { id: 5,  url: "https://triplea050520-creator.github.io/theworldsspygame5/" },
-    { id: 6,  url: "https://triplea050520-creator.github.io/theworldsspygame6/" },
-    { id: 7,  url: "https://triplea050520-creator.github.io/theworldsspygame7/" },
-    { id: 8,  url: "https://triplea050520-creator.github.io/theworldsspygame8/" },
-    { id: 9,  url: "https://triplea050520-creator.github.io/theworldsspygame9/" },
-    { id: 10, url: "https://triplea050520-creator.github.io/theworldsspygame10/" },
+    { id: 1,  name: "Device 01", url: "https://triplea050520-creator.github.io/theworldsspygame1/" },
+    { id: 2,  name: "Device 02", url: "https://triplea050520-creator.github.io/theworldsspygame2/" },
+    { id: 3,  name: "Device 03", url: "https://triplea050520-creator.github.io/theworldsspygmae3/" },
+    { id: 4,  name: "Device 04", url: "https://triplea050520-creator.github.io/theworldsspygame4/" },
+    { id: 5,  name: "Device 05", url: "https://triplea050520-creator.github.io/theworldsspygame5/" },
+    { id: 6,  name: "Device 06", url: "https://triplea050520-creator.github.io/theworldsspygame6/" },
+    { id: 7,  name: "Device 07", url: "https://triplea050520-creator.github.io/theworldsspygame7/" },
+    { id: 8,  name: "Device 08", url: "https://triplea050520-creator.github.io/theworldsspygame8/" },
+    { id: 9,  name: "Device 09", url: "https://triplea050520-creator.github.io/theworldsspygame9/" },
+    { id: 10, name: "Device 10", url: "https://triplea050520-creator.github.io/theworldsspygame10/" },
   ];
-  // ─────────────────────────────────────────────
 
   const STATUSES = [
     "ESTABLISHING SECURE CHANNEL...",
@@ -451,6 +782,32 @@
     "MISSION READY — GOOD LUCK, AGENT.",
   ];
 
+  let adminUnlocked = false;
+  let deployTimer = null;
+
+  function initUI() {
+    const deviceList = document.getElementById("device-list");
+    deviceList.innerHTML = GAMES.map(g => `
+      <div class="device-mini">
+        <span>#${String(g.id).padStart(2,'0')}</span>
+        <b>${g.id % 3 === 0 ? "SIGNAL" : g.id % 2 === 0 ? "ARMED" : "ACTIVE"}</b>
+      </div>
+    `).join("");
+
+    const adminGrid = document.getElementById("admin-grid");
+    adminGrid.innerHTML = GAMES.map(g => `
+      <div class="game-card">
+        <div class="game-card-title">DEVICE #${String(g.id).padStart(2,'0')}</div>
+        <div class="game-card-url">${g.url}</div>
+        <button class="launch-btn" onclick="launchAdminGame(${g.id})">LAUNCH DEVICE #${String(g.id).padStart(2,'0')}</button>
+      </div>
+    `).join("");
+
+    document.getElementById("admin-password").addEventListener("keydown", e => {
+      if (e.key === "Enter") checkAdminPassword();
+    });
+  }
+
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
@@ -458,44 +815,100 @@
 
   function acceptMission() {
     const game = GAMES[Math.floor(Math.random() * GAMES.length)];
-    show('deploy');
+    deployMission(game, false);
+  }
 
-    // Update deploy screen
+  function deployMission(game, isAdmin) {
+    clearInterval(deployTimer);
+    closeAdmin();
+    show('deploy');
+    document.getElementById('main-ticker').style.display = 'flex';
+
+    document.getElementById('deploy-label').textContent = isAdmin ? "▶ ADMIN ROUTE SELECTED" : "▶ MISSION ASSIGNED";
     document.getElementById('mission-number').innerHTML =
       `DEVICE <span>#${String(game.id).padStart(2,'0')}</span>`;
     document.getElementById('topbar-id').textContent =
       `DEVICE #${String(game.id).padStart(2,'0')}`;
 
-    // Animate loading bar + status messages
     const bar    = document.getElementById('load-bar');
     const status = document.getElementById('load-status');
     const meta   = document.getElementById('mission-meta');
 
-    meta.textContent = `TARGET ACQUIRED — DEVICE #${String(game.id).padStart(2,'0')}`;
+    bar.style.width = "0%";
+    status.textContent = "INITIALIZING...";
+    meta.textContent = isAdmin
+      ? `ADMIN OVERRIDE ACCEPTED — DEVICE #${String(game.id).padStart(2,'0')}`
+      : `TARGET ACQUIRED — DEVICE #${String(game.id).padStart(2,'0')}`;
 
     let step = 0;
-    const interval = setInterval(() => {
+    deployTimer = setInterval(() => {
       if (step < STATUSES.length) {
         status.textContent = STATUSES[step];
         bar.style.width = `${(step + 1) * (100 / STATUSES.length)}%`;
         step++;
       } else {
-        clearInterval(interval);
-        // Load the game and switch screen
+        clearInterval(deployTimer);
         document.getElementById('game-frame').src = game.url;
         setTimeout(() => {
           show('game-screen');
           document.getElementById('main-ticker').style.display = 'none';
-        }, 400);
+        }, 350);
       }
-    }, 560);
+    }, 500);
+  }
+
+  function openAdmin() {
+    document.getElementById("admin-modal").classList.add("active");
+    document.getElementById("admin-error").textContent = "";
+    if (adminUnlocked) {
+      document.getElementById("admin-login").style.display = "none";
+      document.getElementById("admin-grid").classList.add("active");
+    } else {
+      document.getElementById("admin-login").style.display = "grid";
+      document.getElementById("admin-grid").classList.remove("active");
+      setTimeout(() => document.getElementById("admin-password").focus(), 80);
+    }
+  }
+
+  function closeAdmin() {
+    document.getElementById("admin-modal").classList.remove("active");
+  }
+
+  function checkAdminPassword() {
+    const input = document.getElementById("admin-password");
+    const error = document.getElementById("admin-error");
+
+    if (input.value === ADMIN_PASSWORD) {
+      adminUnlocked = true;
+      input.value = "";
+      error.textContent = "";
+      document.getElementById("admin-login").style.display = "none";
+      document.getElementById("admin-grid").classList.add("active");
+    } else {
+      error.textContent = "ACCESS DENIED // INVALID CLEARANCE PASSWORD";
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  function launchAdminGame(id) {
+    const game = GAMES.find(g => g.id === id);
+    if (!game) return;
+    deployMission(game, true);
   }
 
   function abortMission() {
+    clearInterval(deployTimer);
     document.getElementById('game-frame').src = 'about:blank';
     document.getElementById('main-ticker').style.display = 'flex';
     show('briefing');
   }
+
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeAdmin();
+  });
+
+  initUI();
 </script>
 </body>
 </html>
