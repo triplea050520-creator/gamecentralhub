@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPERATION: DEFUSE — Mission Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #e63946;
+    --red-dim: #8b1a22;
+    --green: #39ff6a;
+    --green-dim: #1a4d2a;
+    --amber: #f4a01a;
+    --bg: #050608;
+    --bg2: #0a0c10;
+    --surface: #0f1117;
+    --border: #1e2330;
+    --text: #c8cdd8;
+    --muted: #4a5166;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Bebas Neue', sans-serif;
+    --ui: 'Rajdhani', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--ui);
+    overflow: hidden;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    transition: opacity 0.6s ease;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  /* ─── BRIEFING SCREEN ─── */
+  #briefing {
+    background: var(--bg);
+  }
+
+  .header-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--red), var(--red), transparent);
+    animation: scanH 4s linear infinite;
+  }
+  @keyframes scanH {
+    0%   { opacity: 0.4; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.4; }
+  }
+
+  .classified-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--red);
+    border: 1px solid var(--red-dim);
+    padding: 4px 16px;
+    margin-bottom: 2rem;
+    animation: blink-border 2s step-end infinite;
+  }
+  @keyframes blink-border {
+    0%, 100% { border-color: var(--red-dim); }
+    50%       { border-color: var(--red); }
+  }
+
+  .title-block {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .op-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .op-title {
+    font-family: var(--display);
+    font-size: clamp(52px, 8vw, 96px);
+    letter-spacing: 0.08em;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 0 60px rgba(230,57,70,0.3);
+  }
+  .op-sub {
+    font-family: var(--display);
+    font-size: clamp(18px, 3vw, 28px);
+    letter-spacing: 0.3em;
+    color: var(--red);
+  }
+
+  /* Divider */
+  .divider {
+    width: 100%;
+    max-width: 540px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), var(--muted), var(--border), transparent);
+    margin: 1.5rem 0;
+  }
+
+  .briefing-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text);
+    max-width: 540px;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .briefing-text em {
+    color: var(--amber);
+    font-style: normal;
+  }
+  .briefing-text strong {
+    color: var(--red);
+    font-style: normal;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .stat { text-align: center; }
+  .stat-val { font-size: 22px; color: var(--amber); display: block; }
+  .stat-lbl { color: var(--muted); letter-spacing: 0.2em; }
+
+  /* Accept button */
+  .accept-btn {
+    font-family: var(--display);
+    font-size: 22px;
+    letter-spacing: 0.25em;
+    color: #fff;
+    background: transparent;
+    border: 1px solid var(--red);
+    padding: 14px 52px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s;
+    text-transform: uppercase;
+  }
+  .accept-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--red);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s ease;
+    z-index: -1;
+  }
+  .accept-btn:hover { color: #fff; }
+  .accept-btn:hover::before { transform: scaleX(1); }
+  .accept-btn:active { transform: scale(0.97); }
+
+  .warning-line {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    margin-top: 1.2rem;
+  }
+
+  /* Corner decorations */
+  .corner {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border-color: var(--border);
+    border-style: solid;
+    border-width: 0;
+  }
+  .corner.tl { top: 16px; left: 16px; border-top-width: 1px; border-left-width: 1px; }
+  .corner.tr { top: 16px; right: 16px; border-top-width: 1px; border-right-width: 1px; }
+  .corner.bl { bottom: 16px; left: 16px; border-bottom-width: 1px; border-left-width: 1px; }
+  .corner.br { bottom: 16px; right: 16px; border-bottom-width: 1px; border-right-width: 1px; }
+
+  /* Ticker */
+  .ticker {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 28px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  .ticker-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--red);
+    background: var(--red-dim);
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.2em;
+    flex-shrink: 0;
+  }
+  .ticker-scroll {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    animation: scroll-left 30s linear infinite;
+    padding-left: 2rem;
+  }
+  @keyframes scroll-left {
+    from { transform: translateX(100vw); }
+    to   { transform: translateX(-100%); }
+  }
+
+  /* ─── DEPLOY SCREEN ─── */
+  #deploy {
+    background: var(--bg);
+  }
+  .deploy-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--green);
+    margin-bottom: 1rem;
+    animation: pulse-green 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+  .mission-id {
+    font-family: var(--display);
+    font-size: clamp(60px, 10vw, 110px);
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .mission-id span { color: var(--red); }
+
+  .mission-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 2rem;
+  }
+
+  /* Loading bar */
+  .load-bar-wrap {
+    width: 100%;
+    max-width: 440px;
+    height: 3px;
+    background: var(--border);
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .load-bar {
+    height: 100%;
+    background: var(--green);
+    width: 0%;
+    transition: width 2.5s ease;
+  }
+
+  .load-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.2em;
+  }
+
+  /* ─── GAME SCREEN ─── */
+  #game-screen {
+    flex-direction: column;
+    padding: 0;
+    background: #000;
+  }
+
+  .game-topbar {
+    width: 100%;
+    height: 40px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    flex-shrink: 0;
+  }
+  .game-topbar-id {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--red);
+    letter-spacing: 0.2em;
+  }
+  .game-topbar-info {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+  .abort-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 4px 14px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .abort-btn:hover { color: var(--red); border-color: var(--red); }
+
+  #game-frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<!-- Decorative corners -->
+<div class="corner tl"></div>
+<div class="corner tr"></div>
+<div class="corner bl"></div>
+<div class="corner br"></div>
+<div class="header-bar"></div>
+
+<!-- ── SCREEN 1: BRIEFING ── -->
+<div class="screen" id="briefing">
+  <div class="classified-badge">⬛ CLASSIFIED // EYES ONLY</div>
+
+  <div class="title-block">
+    <div class="op-label">OPERATION</div>
+    <div class="op-title">DEFUSE</div>
+    <div class="op-sub">Protocol Zero</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="briefing-text">
+    Agent. Our intelligence confirms <em>10 active devices</em> have been deployed across
+    undisclosed locations. Each carries a <strong>unique 5-digit deactivation code.</strong>
+    You will be assigned one target at random.<br><br>
+    Find the code. Defuse the device.<br>
+    <strong>Failure is not an option.</strong>
+  </p>
+
+  <div class="stats-row">
+    <div class="stat"><span class="stat-val">10</span><span class="stat-lbl">DEVICES</span></div>
+    <div class="stat"><span class="stat-val">05</span><span class="stat-lbl">DIGIT CODE</span></div>
+    <div class="stat"><span class="stat-val">01</span><span class="stat-lbl">CHANCE</span></div>
+  </div>
+
+  <button class="accept-btn" onclick="acceptMission()">Accept Mission</button>
+  <div class="warning-line">// UNAUTHORIZED ACCESS IS A FEDERAL OFFENSE · CLEARANCE LEVEL DELTA REQUIRED</div>
+</div>
+
+<!-- ── SCREEN 2: DEPLOY ── -->
+<div class="screen hidden" id="deploy">
+  <div class="deploy-label">▶ MISSION ASSIGNED</div>
+  <div class="mission-id" id="mission-number">DEVICE <span>#--</span></div>
+  <div class="mission-meta" id="mission-meta">ESTABLISHING SECURE CHANNEL...</div>
+  <div class="load-bar-wrap">
+    <div class="load-bar" id="load-bar"></div>
+  </div>
+  <div class="load-status" id="load-status">INITIALIZING...</div>
+</div>
+
+<!-- ── SCREEN 3: GAME ── -->
+<div class="screen hidden" id="game-screen">
+  <div class="game-topbar">
+    <span class="game-topbar-id" id="topbar-id">DEVICE #--</span>
+    <span class="game-topbar-info">OPERATION DEFUSE // PROTOCOL ZERO</span>
+    <button class="abort-btn" onclick="abortMission()">⬛ ABORT</button>
+  </div>
+  <iframe id="game-frame" src="about:blank" allowfullscreen></iframe>
+</div>
+
+<!-- Ticker -->
+<div class="ticker" id="main-ticker">
+  <div class="ticker-label">LIVE FEED</div>
+  <div class="ticker-scroll">
+    ALERT: DEVICE NETWORK ACTIVATED &nbsp;·&nbsp;
+    10 TARGETS CONFIRMED &nbsp;·&nbsp;
+    AGENT AUTHENTICATION PENDING &nbsp;·&nbsp;
+    DEACTIVATION WINDOW OPEN &nbsp;·&nbsp;
+    INTEL VERIFIED — PROCEED WITH CAUTION &nbsp;·&nbsp;
+    EACH DEVICE CARRIES A UNIQUE 5-DIGIT CODE &nbsp;·&nbsp;
+    ABORT PROTOCOL AVAILABLE AT ANY TIME &nbsp;·&nbsp;
+    GOOD LUCK, AGENT.
+  </div>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+  //  CONFIGURE YOUR 10 GAME URLS HERE
+  // ─────────────────────────────────────────────
+  const GAMES = [
+    { id: 1,  url: "https://YOUR-USERNAME.github.io/bomb-game-1/" },
+    { id: 2,  url: "https://YOUR-USERNAME.github.io/bomb-game-2/" },
+    { id: 3,  url: "https://YOUR-USERNAME.github.io/bomb-game-3/" },
+    { id: 4,  url: "https://YOUR-USERNAME.github.io/bomb-game-4/" },
+    { id: 5,  url: "https://YOUR-USERNAME.github.io/bomb-game-5/" },
+    { id: 6,  url: "https://YOUR-USERNAME.github.io/bomb-game-6/" },
+    { id: 7,  url: "https://YOUR-USERNAME.github.io/bomb-game-7/" },
+    { id: 8,  url: "https://YOUR-USERNAME.github.io/bomb-game-8/" },
+    { id: 9,  url: "https://YOUR-USERNAME.github.io/bomb-game-9/" },
+    { id: 10, url: "https://YOUR-USERNAME.github.io/bomb-game-10/" },
+  ];
+  // ─────────────────────────────────────────────
+
+  const STATUSES = [
+    "ESTABLISHING SECURE CHANNEL...",
+    "ENCRYPTING COMMS...",
+    "TRIANGULATING DEVICE LOCATION...",
+    "UPLOADING DEACTIVATION SUITE...",
+    "MISSION READY — GOOD LUCK, AGENT.",
+  ];
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function acceptMission() {
+    const game = GAMES[Math.floor(Math.random() * GAMES.length)];
+    show('deploy');
+
+    // Update deploy screen
+    document.getElementById('mission-number').innerHTML =
+      `DEVICE <span>#${String(game.id).padStart(2,'0')}</span>`;
+    document.getElementById('topbar-id').textContent =
+      `DEVICE #${String(game.id).padStart(2,'0')}`;
+
+    // Animate loading bar + status messages
+    const bar    = document.getElementById('load-bar');
+    const status = document.getElementById('load-status');
+    const meta   = document.getElementById('mission-meta');
+
+    meta.textContent = `TARGET ACQUIRED — DEVICE #${String(game.id).padStart(2,'0')}`;
+
+    let step = 0;
+    const interval = setInterval(() => {
+      if (step < STATUSES.length) {
+        status.textContent = STATUSES[step];
+        bar.style.width = `${(step + 1) * (100 / STATUSES.length)}%`;
+        step++;
+      } else {
+        clearInterval(interval);
+        // Load the game and switch screen
+        document.getElementById('game-frame').src = game.url;
+        setTimeout(() => {
+          show('game-screen');
+          document.getElementById('main-ticker').style.display = 'none';
+        }, 400);
+      }
+    }, 560);
+  }
+
+  function abortMission() {
+    document.getElementById('game-frame').src = 'about:blank';
+    document.getElementById('main-ticker').style.display = 'flex';
+    show('briefing');
+  }
+</script>
+</body>
+</html>
