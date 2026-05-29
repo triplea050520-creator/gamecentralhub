@@ -761,6 +761,24 @@
     }
   }
 
+
+  .kids-card {
+    border-color: rgba(255, 209, 102, 0.42) !important;
+    background: rgba(255, 209, 102, 0.055) !important;
+  }
+
+  .kids-card .game-card-title {
+    color: var(--gold) !important;
+  }
+
+  .device-mini b {
+    color: var(--muted);
+  }
+
+  .device-mini span {
+    min-width: 34px;
+  }
+
 </style>
 </head>
 <body>
@@ -793,7 +811,7 @@
       <div class="divider"></div>
 
       <p class="briefing-text">
-        Agent. Our intelligence confirms <em>10 active devices</em> have been deployed across
+        Agent. Our intelligence confirms <em>12 active devices</em> have been deployed across
         undisclosed locations. Each carries a <strong>unique 5-digit deactivation code.</strong>
         You will be assigned one target at random.<br><br>
         Find the code. Defuse the device.<br>
@@ -801,7 +819,7 @@
       </p>
 
       <div class="stats-row">
-        <div class="stat"><span class="stat-val">10</span><span class="stat-lbl">DEVICES</span></div>
+        <div class="stat"><span class="stat-val">12</span><span class="stat-lbl">DEVICES</span></div>
         <div class="stat"><span class="stat-val">05</span><span class="stat-lbl">DIGIT CODE</span></div>
         <div class="stat"><span class="stat-val">01</span><span class="stat-lbl">CHANCE</span></div>
       </div>
@@ -867,7 +885,7 @@
   <div class="ticker-label">LIVE FEED</div>
   <div class="ticker-scroll">
     ALERT: DEVICE NETWORK ACTIVATED &nbsp;·&nbsp;
-    10 TARGETS CONFIRMED &nbsp;·&nbsp;
+    12 TARGETS CONFIRMED &nbsp;·&nbsp;
     AGENT AUTHENTICATION PENDING &nbsp;·&nbsp;
     DEACTIVATION WINDOW OPEN &nbsp;·&nbsp;
     INTEL VERIFIED — PROCEED WITH CAUTION &nbsp;·&nbsp;
@@ -881,16 +899,22 @@
   const ADMIN_PASSWORD = "476105";
 
   const GAMES = [
-    { id: 1,  name: "Device 01", url: "https://triplea050520-creator.github.io/theworldsspygame1/" },
-    { id: 2,  name: "Device 02", url: "https://triplea050520-creator.github.io/theworldsspygame2/" },
-    { id: 3,  name: "Device 03", url: "https://triplea050520-creator.github.io/theworldsspygmae3/" },
-    { id: 4,  name: "Device 04", url: "https://triplea050520-creator.github.io/theworldsspygame4/" },
-    { id: 5,  name: "Device 05", url: "https://triplea050520-creator.github.io/theworldsspygame5/" },
-    { id: 6,  name: "Device 06", url: "https://triplea050520-creator.github.io/theworldsspygame6/" },
-    { id: 7,  name: "Device 07", url: "https://triplea050520-creator.github.io/theworldsspygame7/" },
-    { id: 8,  name: "Device 08", url: "https://triplea050520-creator.github.io/theworldsspygame8/" },
-    { id: 9,  name: "Device 09", url: "https://triplea050520-creator.github.io/theworldsspygame9/" },
-    { id: 10, name: "Device 10", url: "https://triplea050520-creator.github.io/theworldsspygame10/" },
+    { id: 1,  key: "1",  name: "Device 01", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame1/" },
+    { id: 2,  key: "2",  name: "Device 02", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame2/" },
+    { id: 3,  key: "3",  name: "Device 03", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygmae3/" },
+    { id: 4,  key: "4",  name: "Device 04", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame4/" },
+    { id: 5,  key: "5",  name: "Device 05", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame5/" },
+    { id: 6,  key: "6",  name: "Device 06", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame6/" },
+    { id: 7,  key: "7",  name: "Device 07", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame7/" },
+    { id: 8,  key: "8",  name: "Device 08", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame8/" },
+    { id: 9,  key: "9",  name: "Device 09", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame9/" },
+    { id: 10, key: "10", name: "Device 10", type: "STANDARD", url: "https://triplea050520-creator.github.io/theworldsspygame10/" },
+
+    // Kids puzzle games.
+    // Put these HTML files in the same GitHub Pages folder as this hub,
+    // or replace these relative paths with the final published URLs.
+    { id: "C", key: "C", name: "Kids C — Rhyme Cipher",   type: "KIDS", url: "the_rhyme_cipher_single_page.html" },
+    { id: "D", key: "D", name: "Kids D — Rainbow Cipher", type: "KIDS", url: "https://triplea050520-creator.github.io/theworldsspykidsgame1/" },
   ];
 
   const STATUSES = [
@@ -904,21 +928,35 @@
   let adminUnlocked = false;
   let deployTimer = null;
 
+  function deviceCode(game) {
+    return String(game.key ?? game.id).toUpperCase();
+  }
+
+  function deviceDisplay(game) {
+    const code = deviceCode(game);
+    return code.length === 1 && /\d/.test(code) ? `#0${code}` : `#${code}`;
+  }
+
+  function isKidsGame(game) {
+    return game.type === "KIDS";
+  }
+
+
   function initUI() {
     const deviceList = document.getElementById("device-list");
     deviceList.innerHTML = GAMES.map(g => `
       <div class="device-mini">
-        <span>#${String(g.id).padStart(2,'0')}</span>
-        <b>${g.id % 3 === 0 ? "SIGNAL" : g.id % 2 === 0 ? "ARMED" : "ACTIVE"}</b>
+        <span>${deviceDisplay(g)}</span>
+        <b>${isKidsGame(g) ? "KIDS" : (Number(g.id) % 3 === 0 ? "SIGNAL" : Number(g.id) % 2 === 0 ? "ARMED" : "ACTIVE")}</b>
       </div>
     `).join("");
 
     const adminGrid = document.getElementById("admin-grid");
-    adminGrid.innerHTML = GAMES.map(g => `
-      <div class="game-card">
-        <div class="game-card-title">DEVICE #${String(g.id).padStart(2,'0')}</div>
-        <div class="game-card-url">${g.url}</div>
-        <button class="launch-btn" onclick="launchAdminGame(${g.id})">LAUNCH DEVICE #${String(g.id).padStart(2,'0')}</button>
+    adminGrid.innerHTML = GAMES.map((g, index) => `
+      <div class="game-card ${isKidsGame(g) ? "kids-card" : ""}">
+        <div class="game-card-title">${isKidsGame(g) ? "KIDS GAME" : "DEVICE"} ${deviceDisplay(g)}</div>
+        <div class="game-card-url">${g.name} · ${g.url}</div>
+        <button class="launch-btn" onclick="launchAdminGameByIndex(${index})">LAUNCH ${deviceDisplay(g)}</button>
       </div>
     `).join("");
 
@@ -945,9 +983,9 @@
 
     document.getElementById('deploy-label').textContent = isAdmin ? "▶ ADMIN ROUTE SELECTED" : "▶ MISSION ASSIGNED";
     document.getElementById('mission-number').innerHTML =
-      `DEVICE <span>#${String(game.id).padStart(2,'0')}</span>`;
+      `DEVICE <span>${deviceDisplay(game)}</span>`;
     document.getElementById('topbar-id').textContent =
-      `DEVICE #${String(game.id).padStart(2,'0')}`;
+      `${isKidsGame(game) ? 'KIDS GAME' : 'DEVICE'} ${deviceDisplay(game)}`;
 
     const bar    = document.getElementById('load-bar');
     const status = document.getElementById('load-status');
@@ -956,8 +994,8 @@
     bar.style.width = "0%";
     status.textContent = "INITIALIZING...";
     meta.textContent = isAdmin
-      ? `ADMIN OVERRIDE ACCEPTED — DEVICE #${String(game.id).padStart(2,'0')}`
-      : `TARGET ACQUIRED — DEVICE #${String(game.id).padStart(2,'0')}`;
+      ? `${isKidsGame(game) ? 'KIDS OVERRIDE ACCEPTED' : 'ADMIN OVERRIDE ACCEPTED'} — ${deviceDisplay(game)}`
+      : `${isKidsGame(game) ? 'KIDS TARGET SELECTED' : 'TARGET ACQUIRED'} — ${deviceDisplay(game)}`;
 
     let step = 0;
     deployTimer = setInterval(() => {
@@ -1010,8 +1048,14 @@
     }
   }
 
+  function launchAdminGameByIndex(index) {
+    const game = GAMES[index];
+    if (!game) return;
+    deployMission(game, true);
+  }
+
   function launchAdminGame(id) {
-    const game = GAMES.find(g => g.id === id);
+    const game = GAMES.find(g => String(g.id) === String(id) || String(g.key) === String(id));
     if (!game) return;
     deployMission(game, true);
   }
