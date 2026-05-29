@@ -30,11 +30,13 @@
   }
 
   html, body {
-    height: 100%;
+    min-height: 100%;
+    height: auto;
     background: var(--bg);
     color: var(--text);
     font-family: var(--ui);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   body {
@@ -99,17 +101,22 @@
   }
 
   .screen {
-    position: fixed;
-    inset: 0;
+    position: relative;
+    min-height: 100svh;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: clamp(1rem, 3vw, 2rem);
-    transition: opacity 0.45s ease;
+    transition: opacity 0.25s ease;
     z-index: 2;
   }
-  .screen.hidden { opacity: 0; pointer-events: none; }
+  .screen.hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+  }
 
   .command-frame {
     width: min(1080px, 100%);
@@ -472,6 +479,9 @@
   }
 
   #game-screen {
+    position: fixed;
+    inset: 0;
+    min-height: 100svh;
     flex-direction: column;
     padding: 0;
     background: #000;
@@ -525,15 +535,18 @@
     background: rgba(0,0,0,0.78);
     z-index: 500;
     display: none;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .admin-modal.active { display: flex; }
   .admin-card {
     width: min(720px, 100%);
-    max-height: 88vh;
-    overflow: auto;
+    max-height: none;
+    overflow: visible;
+    margin: 10px 0 40px;
     background:
       linear-gradient(135deg, rgba(54,214,255,0.10), transparent 36%),
       rgba(8, 12, 22, 0.96);
@@ -642,6 +655,112 @@
     .accept-btn, .admin-btn { width: 100%; padding-inline: 20px; }
     .screen { padding: 1rem; }
   }
+
+  /* ─── BOOTH-SAFE MOBILE / TABLET FIXES ─── */
+  button, input {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  input {
+    font-size: 16px;
+  }
+
+  @media (max-height: 720px) {
+    .screen {
+      justify-content: flex-start;
+      padding-top: 18px;
+      padding-bottom: 54px;
+    }
+
+    .main-panel {
+      min-height: auto;
+      padding: 22px 18px;
+    }
+
+    .op-title {
+      font-size: clamp(46px, 12vw, 78px);
+    }
+
+    .briefing-text {
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .stats-row {
+      margin-bottom: 1rem;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .screen {
+      justify-content: flex-start;
+      padding: 14px 12px 54px;
+    }
+
+    .command-frame {
+      width: 100%;
+      display: block;
+    }
+
+    .main-panel {
+      width: 100%;
+      min-height: auto;
+      border-radius: 18px;
+      padding: 20px 14px;
+    }
+
+    .briefing-text {
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .stats-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .action-row {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .accept-btn,
+    .admin-btn,
+    .launch-btn {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 14px;
+    }
+
+    .admin-modal {
+      padding: 10px;
+    }
+
+    .admin-card {
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 60px;
+    }
+
+    .admin-head {
+      flex-direction: column;
+    }
+
+    .close-btn {
+      width: 100%;
+    }
+
+    .admin-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ticker {
+      height: 28px;
+    }
+  }
+
 </style>
 </head>
 <body>
