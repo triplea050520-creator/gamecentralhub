@@ -295,7 +295,7 @@
     flex-wrap: wrap;
   }
 
-  .accept-btn, .admin-btn, .launch-btn {
+  .accept-btn, .admin-btn, .launch-btn, .kids-launch-btn {
     font-family: var(--display);
     font-size: 21px;
     letter-spacing: 0.22em;
@@ -315,6 +315,11 @@
     color: var(--cyan);
     padding-inline: 28px;
   }
+  .kids-launch-btn {
+    border-color: var(--gold);
+    color: var(--gold);
+    padding-inline: 28px;
+  }
   .launch-btn {
     border-color: var(--green);
     color: var(--green);
@@ -323,7 +328,7 @@
     letter-spacing: 0.18em;
   }
 
-  .accept-btn::before, .admin-btn::before, .launch-btn::before {
+  .accept-btn::before, .admin-btn::before, .launch-btn::before, .kids-launch-btn::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -335,8 +340,9 @@
   }
   .admin-btn::before { background: rgba(54,214,255,0.24); }
   .launch-btn::before { background: rgba(57,255,106,0.18); }
-  .accept-btn:hover::before, .admin-btn:hover::before, .launch-btn:hover::before { transform: scaleX(1); }
-  .accept-btn:active, .admin-btn:active, .launch-btn:active { transform: scale(0.97); }
+  .kids-launch-btn::before { background: rgba(255,209,102,0.24); }
+  .accept-btn:hover::before, .admin-btn:hover::before, .launch-btn:hover::before, .kids-launch-btn:hover::before { transform: scaleX(1); }
+  .accept-btn:active, .admin-btn:active, .launch-btn:active, .kids-launch-btn:active { transform: scale(0.97); }
 
   .warning-line {
     font-family: var(--mono);
@@ -652,7 +658,7 @@
 
   @media (max-width: 560px) {
     .stats-row, .admin-grid { grid-template-columns: 1fr; }
-    .accept-btn, .admin-btn { width: 100%; padding-inline: 20px; }
+    .accept-btn, .admin-btn, .kids-launch-btn { width: 100%; padding-inline: 20px; }
     .screen { padding: 1rem; }
   }
 
@@ -728,7 +734,8 @@
 
     .accept-btn,
     .admin-btn,
-    .launch-btn {
+    .launch-btn,
+    .kids-launch-btn {
       width: 100%;
       min-height: 48px;
       padding: 12px 14px;
@@ -826,6 +833,7 @@
 
       <div class="action-row">
         <button class="accept-btn" onclick="acceptMission()">Accept Mission</button>
+        <button class="kids-launch-btn" onclick="launchJuniorMissions()">🕵️ Junior Missions</button>
         <button class="admin-btn" onclick="openAdmin()">Admin Override</button>
       </div>
       <div class="warning-line">// UNAUTHORIZED ACCESS IS A FEDERAL OFFENSE · CLEARANCE LEVEL DELTA REQUIRED</div>
@@ -915,6 +923,10 @@
     // or replace these relative paths with the final published URLs.
     { id: "C", key: "C", name: "Kids C — Rhyme Cipher",   type: "KIDS", url: "https://triplea050520-creator.github.io/theworldsspykidsgame2/" },
     { id: "D", key: "D", name: "Kids D — Rainbow Cipher", type: "KIDS", url: "https://triplea050520-creator.github.io/theworldsspykidsgame1/" },
+
+    // Junior Spy Missions — 8-mission hub (ages 6-15).
+    // REPLACE this URL with wherever you host the "Akafaraz Spy Missions" HTML file.
+    { id: "M", key: "M", name: "Junior Spy Missions", type: "KIDS", url: "https://triplea050520-creator.github.io/theworldsspykidsgame3/" },
   ];
 
   const STATUSES = [
@@ -971,7 +983,16 @@
   }
 
   function acceptMission() {
-    const game = GAMES[Math.floor(Math.random() * GAMES.length)];
+    // Random assignment excludes the Junior Missions hub —
+    // that one is opt-in only via its own button.
+    const pool = GAMES.filter(g => g.id !== "M");
+    const game = pool[Math.floor(Math.random() * pool.length)];
+    deployMission(game, false);
+  }
+
+  function launchJuniorMissions() {
+    const game = GAMES.find(g => g.id === "M");
+    if (!game) return;
     deployMission(game, false);
   }
 
